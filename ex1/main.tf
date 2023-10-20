@@ -13,7 +13,7 @@ provider "aws" {
 /*
     Define VPC
 */
-resource "aws_vpc" "vpc_es1" {
+resource "aws_vpc" "vpc-es1" {
     cidr_block = "10.0.0.0/16"
     instance_tenancy = "default"
     enable_dns_hostnames = "true"
@@ -45,7 +45,7 @@ resource "aws_subnet" "az1-private" {
   availability_zone = "${var.AWS_REGION}a"
 
   tags = {
-    name = "subnet-private-1"
+    name = "az1-private"
   }
 }
 
@@ -57,7 +57,7 @@ resource "aws_subnet" "az2-public" {
   availability_zone = "${var.AWS_REGION}b"
 
   tags = {
-    name = "subnet-public-2"
+    name = "az2-public"
   }
 }
 
@@ -68,15 +68,15 @@ resource "aws_subnet" "az2-private" {
   availability_zone = "${var.AWS_REGION}b"
 
   tags = {
-    name = "subnet-private-2"
+    name = "az2-private"
   }
 }
 
 /*
     Define INTERNET GATEWAY
 */
-resource "aws_internet_gateway" "igw_es1" {
-    vpc_id = "${aws_vpc.vpc_es1}"
+resource "aws_internet_gateway" "igw-es1" {
+    vpc_id = "${aws_vpc.vpc-es1}"
 
     tags = {
         name = "igw-es1"
@@ -92,13 +92,13 @@ resource "aws_eip" "nat-az2" {}
 
 resource "aws_nat_gateway" "nat-sub1" {
   allocation_id = "${aws_eip.nat-az1.id}"
-  subnet_id = "${aws_subnet.subnet-public-1.id}"
+  subnet_id = "${aws_subnet.az1-public.id}"
   depends_on = [ aws_internet_gateway.igw-es1 ]
 }
 
 resource "aws_nat_gateway" "nat-sub2" {
   allocation_id = "${aws_eip.nat-az2.id}"
-  subnet_id = "${aws_subnet.subnet-public-2.id}"
+  subnet_id = "${aws_subnet.az2-public.id}"
   depends_on = [ aws_internet_gateway.igw-es1 ]
 }
 
@@ -107,7 +107,7 @@ resource "aws_nat_gateway" "nat-sub2" {
     Define generic permissions for public and private subnets
 */
 resource "aws_route_table" "public-subnets" {
-  vpc_id = var.aws_vpc.vpc_es1
+  vpc_id = var.aws_vpc.vpc-es1
   route = {
         cidr_block = "0.0.0.0/0"
         gateway_id = "${aws_internet_gateway.igw-es1}"
@@ -119,7 +119,7 @@ resource "aws_route_table" "public-subnets" {
 }
 
 resource "aws_route_table" "private-subnets" {
-  vpc_id = var.aws_vpc.vpc_es1
+  vpc_id = var.aws_vpc.vpc-es1
   route = {
         cidr_block = "0.0.0.0/0"
         gateway_id = "${aws_nat_gateway.nat-es1.id}"
@@ -136,22 +136,22 @@ resource "aws_route_table" "private-subnets" {
 */
 // Traffic for PUB SUB AZ1
 resource "aws_route_table_association" "subnet-public-1" {
-  subnet_id = "${aws_subnet.subnet-public-1.id}"
+  subnet_id = "${aws_subnet.az1-public.id}"
   route_table_id = "${aws_route_table.public-subnets.id}"
 }
 // Traffic for PUB SUB AZ2
 resource "aws_route_table_association" "subnet-public-2" {
-  subnet_id = "${aws_subnet.subnet-public-2.id}"
+  subnet_id = "${aws_subnet.az2-public.id}"
   route_table_id = "${aws_route_table.public-subnets.id}"
 }
 // Traffic for PRIV SUB AZ1
 resource "aws_route_table_association" "subnet-private-1" {
-  subnet_id = "${aws_subnet.subnet-private-1.id}"
+  subnet_id = "${aws_subnet.az1-private.id}"
   route_table_id = "${aws_route_table.private-subnets.id}"
 }
 // Traffic for PRIV SUB AZ2
 resource "aws_route_table_association" "subnet-private-2" {
-  subnet_id = "${aws_subnet.subnet-private-2.id}"
+  subnet_id = "${aws_subnet.az2-private.id}"
   route_table_id = "${aws_route_table.private-subnets.id}"
 }
 
@@ -163,7 +163,7 @@ resource "aws_instance" "bastion-az1" {
   ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t2.micro"
 
-  subnet_id = "${aws_subnet.subnet-public-1.id}"
+  subnet_id = "${aws_subnet.az1-public.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-everything.id}" ]
 }
 
@@ -172,7 +172,7 @@ resource "aws_instance" "bastion-az2" {
   ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t2.micro"
 
-  subnet_id = "${aws_subnet.subnet-public-2.id}"
+  subnet_id = "${aws_subnet.az2-public.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-everything.id}" ]
 }
 
@@ -181,7 +181,7 @@ resource "aws_instance" "private-ec2-az1" {
   ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t2.micro"
 
-  subnet_id = "${aws_subnet.subnet-private-1.id}"
+  subnet_id = "${aws_subnet.az1-private.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-bastion.id}" ]
 }
 
@@ -190,7 +190,7 @@ resource "aws_instance" "private-ec2-az2" {
   ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t2.micro"
 
-  subnet_id = "${aws_subnet.subnet-private-2.id}"
+  subnet_id = "${aws_subnet.az2-private.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-bastion.id}" ]
 }
 
@@ -200,7 +200,7 @@ resource "aws_instance" "private-ec2-az2" {
 */
 // For public subnets
 resource "aws_security_group" "allow-everything" {
-    vpc_id = "${aws_vpc.vpc_es1.id}"
+    vpc_id = "${aws_vpc.vpc-es1.id}"
     name = "allow-everything"
     description = "Security group that allows ssh and all egress traffic"
     egress {
@@ -224,7 +224,7 @@ resource "aws_security_group" "allow-everything" {
 
 // For private subnets (only ingress from bastion)
 resource "aws_security_group" "allow-bastion" {
-    vpc_id = "${aws_vpc.vpc_es1.id}"
+    vpc_id = "${aws_vpc.vpc-es1.id}"
     name = "allow-batsion"
     description = "Security group that allows only ingress traffic from bastion"
 
