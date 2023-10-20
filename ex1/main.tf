@@ -110,7 +110,7 @@ resource "aws_route_table" "public-subnets" {
   vpc_id = aws_vpc.vpc-es1.id
   route = {
         cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_internet_gateway.igw-es1}"
+        gateway_id = "${aws_internet_gateway.igw-es1.id}"
   }
 
   tags = {
@@ -118,11 +118,23 @@ resource "aws_route_table" "public-subnets" {
   }
 }
 
-resource "aws_route_table" "private-subnets" {
+resource "aws_route_table" "private-subnets-az1" {
   vpc_id = aws_vpc.vpc-es1.id
   route = {
         cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_nat_gateway.nat-es1.id}"
+        gateway_id = "${aws_nat_gateway.nat-sub1.id}"
+  }
+
+  tags = {
+    Name = "private-subnets"
+  }
+}
+
+resource "aws_route_table" "private-subnets-az2" {
+  vpc_id = aws_vpc.vpc-es1.id
+  route = {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = "${aws_nat_gateway.nat-sub2.id}"
   }
 
   tags = {
