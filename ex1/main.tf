@@ -159,12 +159,12 @@ resource "aws_route_table_association" "subnet-public-2" {
 // Traffic for PRIV SUB AZ1
 resource "aws_route_table_association" "subnet-private-1" {
   subnet_id = "${aws_subnet.az1-private.id}"
-  route_table_id = "${aws_route_table.private-subnets.id}"
+  route_table_id = "${aws_route_table.private-subnets-az1.id}"
 }
 // Traffic for PRIV SUB AZ2
 resource "aws_route_table_association" "subnet-private-2" {
   subnet_id = "${aws_subnet.az2-private.id}"
-  route_table_id = "${aws_route_table.private-subnets.id}"
+  route_table_id = "${aws_route_table.private-subnets-az2.id}"
 }
 
 /*
