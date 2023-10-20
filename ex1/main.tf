@@ -28,7 +28,7 @@ resource "aws_vpc" "vpc-es1" {
 */
 // Public subnet AZ1
 resource "aws_subnet" "az1-public" {
-  vpc_id = "${aws_vpc.vpc-es1}"
+  vpc_id = "${aws_vpc.vpc-es1.id}"
   cidr_block = "10.0.1.0/24"
   map_public_ip_on_launch = "true"
   availability_zone = "${var.AWS_REGION}a"
@@ -40,7 +40,7 @@ resource "aws_subnet" "az1-public" {
 
 // Private subnet AZ1
 resource "aws_subnet" "az1-private" {
-  vpc_id = "${aws_vpc.vpc-es1}"
+  vpc_id = "${aws_vpc.vpc-es1.id}"
   cidr_block = "10.0.2.0/24"
   availability_zone = "${var.AWS_REGION}a"
 
@@ -51,7 +51,7 @@ resource "aws_subnet" "az1-private" {
 
 // Public subnet AZ2
 resource "aws_subnet" "az2-public" {
-  vpc_id = "${aws_vpc.vpc-es1}"
+  vpc_id = "${aws_vpc.vpc-es1.id}"
   cidr_block = "10.0.3.0/24"
   map_public_ip_on_launch = "true"
   availability_zone = "${var.AWS_REGION}b"
@@ -63,7 +63,7 @@ resource "aws_subnet" "az2-public" {
 
 // Private subnet AZ2
 resource "aws_subnet" "az2-private" {
-  vpc_id = "${aws_vpc.vpc-es1}"
+  vpc_id = "${aws_vpc.vpc-es1.id}"
   cidr_block = "10.0.4.0/24"
   availability_zone = "${var.AWS_REGION}b"
 
@@ -76,7 +76,7 @@ resource "aws_subnet" "az2-private" {
     Define INTERNET GATEWAY
 */
 resource "aws_internet_gateway" "igw-es1" {
-    vpc_id = "${aws_vpc.vpc-es1}"
+    vpc_id = "${aws_vpc.vpc-es1.id}"
 
     tags = {
         name = "igw-es1"
