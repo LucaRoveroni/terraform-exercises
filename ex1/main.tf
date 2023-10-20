@@ -1,5 +1,5 @@
 //
-// Exercise #2 with Terraform
+// Exercise #1 with Terraform
 // Project created by Luca Roveroni
 // STORM Reply srl - 17/10/2023
 //
