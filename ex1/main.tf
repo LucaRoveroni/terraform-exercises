@@ -173,7 +173,7 @@ resource "aws_route_table_association" "subnet-private-2" {
 // Bastion EC2 for subnet in AZ1
 resource "aws_instance" "bastion-az1" {
   ami = "${var.AWS_UBUNTU_AMI}"
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
 
   subnet_id = "${aws_subnet.az1-public.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-everything.id}" ]
@@ -182,7 +182,7 @@ resource "aws_instance" "bastion-az1" {
 // Bastion EC2 for subnet in AZ2
 resource "aws_instance" "bastion-az2" {
   ami = "${var.AWS_UBUNTU_AMI}"
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
 
   subnet_id = "${aws_subnet.az2-public.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-everything.id}" ]
@@ -191,7 +191,7 @@ resource "aws_instance" "bastion-az2" {
 // Private EC2 for subnet in AZ1
 resource "aws_instance" "private-ec2-az1" {
   ami = "${var.AWS_UBUNTU_AMI}"
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
 
   subnet_id = "${aws_subnet.az1-private.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-bastion.id}" ]
@@ -200,7 +200,7 @@ resource "aws_instance" "private-ec2-az1" {
 // Private EC2 for subnet in AZ2
 resource "aws_instance" "private-ec2-az2" {
   ami = "${var.AWS_UBUNTU_AMI}"
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
 
   subnet_id = "${aws_subnet.az2-private.id}"
   vpc_security_group_ids = [ "${aws_security_group.allow-bastion.id}" ]
@@ -244,7 +244,7 @@ resource "aws_security_group" "allow-bastion" {
         from_port = 0
         to_port = 0
         protocol = "-1"
-        cidr_blocks = ["${aws_security_group.allow-everything.id}"]
+        cidr_blocks = ["${aws_security_group.allow-everything.cidr_block}"]
     }
 
     tags = {
