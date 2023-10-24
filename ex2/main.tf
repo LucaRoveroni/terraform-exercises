@@ -330,7 +330,7 @@ resource "aws_security_group_rule" "ingress_alb_traffic" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
-resource "aws_security_group_rule" "ingress_alb_traffic" {
+resource "aws_security_group_rule" "egress_alb_traffic" {
   type              = "egress"
   from_port         = 80
   to_port           = 80
