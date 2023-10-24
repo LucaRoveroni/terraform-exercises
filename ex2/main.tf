@@ -159,72 +159,6 @@ resource "aws_security_group_rule" "ingress_ec2_health_check" {
 }
 
 /*
-    Define ROUTE TABLES
-    Define generic permissions for public and private subnets
-*/
-// Route table for TGW VPC 2
-resource "aws_route_table" "public-to-tgw" {
-  vpc_id = aws_vpc.vpc-2.id
-
-  route {
-      cidr_block = "10.1.0.0/16"
-      gateway_id = "${aws_nat_gateway.nat-vpc-1.id}"
-  }
-
-  tags = {
-    name = "public-to-tgw"
-  }
-}
-
-// Route table for TGW VPC 1
-resource "aws_route_table" "private-to-tgw" {
-  vpc_id = aws_vpc.vpc-1.id
-  tags = {
-    name = "private-to-tgw"
-  }
-}
-
-// Create route to transist gateway for VPC 1
-resource "aws_route" "tgw-route-vpc-1" {
-  route_table_id = aws_route_table.private-to-tgw.id
-  destination_cidr_block = "10.2.0.0/16"
-  transit_gateway_id = aws_ec2_transit_gateway.tgw.id
-  depends_on = [aws_ec2_transit_gateway.tgw]
-}
-
-// Create route to transist gateway for VPC 2
-resource "aws_route" "tgw-route-vpc-2" {
-  route_table_id = aws_route_table.public-to-tgw.id
-  destination_cidr_block = "10.1.0.0/16"
-  transit_gateway_id = aws_ec2_transit_gateway.tgw.id
-  depends_on = [aws_ec2_transit_gateway.tgw]
-}
-
-/*
-    Define ROUTE ASSOCIATIONS
-    Assign permissions to existing subnets
-*/
-resource "aws_route_table_association" "subnet-public-tgw-1" {
-  subnet_id = "${aws_subnet.public-1.id}"
-  route_table_id = "${aws_route_table.public-to-tgw.id}"
-}
-
-resource "aws_route_table_association" "subnet-public-tgw-2" {
-  subnet_id = "${aws_subnet.public-2.id}"
-  route_table_id = "${aws_route_table.public-to-tgw.id}"
-}
-
-resource "aws_route_table_association" "subnet-private-tgw-1" {
-  subnet_id = "${aws_subnet.private-1.id}"
-  route_table_id = "${aws_route_table.private-to-tgw.id}"
-}
-
-resource "aws_route_table_association" "subnet-private-tgw-2" {
-  subnet_id = "${aws_subnet.private-1.id}"
-  route_table_id = "${aws_route_table.private-to-tgw.id}"
-}
-
-/*
     Define Internet Gateways
 */
 // IGW for VPC 2
@@ -251,6 +185,7 @@ resource "aws_nat_gateway" "nat-vpc-1" {
 /*
     Define Transit Gateway
     Tutorial: https://awstip.com/aws-transit-gateway-using-terraform-fb7731e94e58
+    Tutorial: https://medium.com/@nikunj.vasava/how-to-deploy-multiple-vpc-using-terraform-and-connect-with-transit-gateway-on-aws-7c76a245380
 */
 resource "aws_ec2_transit_gateway" "tgw" {
   description                     = "Transit Gateway with 2 VPCs"
@@ -314,14 +249,14 @@ resource "aws_lb_target_group" "alb_tg" {
 // Attach ALB with one EC2 of VPC 1
 resource "aws_lb_target_group_attachment" "alb_tg_attach_webserver_1" {
   target_group_arn = aws_lb_target_group.alb_tg.arn
-  target_id        = aws_instance.private-webserver-1.id
+  target_id        = aws_instance.private-webserver-1.private_ip
   port             = 8080
 }
 
 // Attach ALB with another EC2 of VPC 1
 resource "aws_lb_target_group_attachment" "alb_tg_attach_webserver_2" {
   target_group_arn = aws_lb_target_group.alb_tg.arn
-  target_id        = aws_instance.private-webserver-2.id
+  target_id        = aws_instance.private-webserver-2.private_ip
   port             = 8080
 }
 
