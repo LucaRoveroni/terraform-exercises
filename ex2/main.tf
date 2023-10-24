@@ -105,7 +105,7 @@ resource "aws_route_table_association" "private_subnet_association1" {
   route_table_id = aws_route_table.private_subnet_rt.id
 }
 
-resource "aws_route_table_association" "private_subnet_association1" {
+resource "aws_route_table_association" "private_subnet_association2" {
   subnet_id      = aws_subnet.private_2.id
   route_table_id = aws_route_table.private_subnet_rt.id
 }
@@ -127,7 +127,7 @@ resource "aws_route_table" "public_subnet_rt" {
 } 
 
 # Create route table public subnet association
-resource "aws_route_table_association" "public_subnet_association2" {
+resource "aws_route_table_association" "public_subnet_association1" {
   subnet_id      = aws_subnet.public_2.id
   route_table_id = aws_route_table.public_subnet_rt.id
 }
