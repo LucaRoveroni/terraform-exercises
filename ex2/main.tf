@@ -89,13 +89,68 @@ resource "aws_subnet" "public-2" {
 }
 
 /*
+    Route Tables for VPCs
+*/
+# Configuration section for route table public subnet
+resource "aws_route_table" "private_subnet" {
+  vpc_id = aws_vpc.vpc-1.id
+  tags = {
+    "Name" = "private-rt1"
+  }
+} 
+
+# Create route table public subnet association
+resource "aws_route_table_association" "private_subnet_association1" {
+  subnet_id      = aws_subnet.private_subnet.id
+  route_table_id = aws_route_table.private_subnet.id
+}
+
+# Create route to transist gateway in route table 
+resource "aws_route" "tgw-route-1" {
+  route_table_id         = aws_route_table.private_subnet.id
+  destination_cidr_block = "10.2.0.0/16"
+  transit_gateway_id     = aws_ec2_transit_gateway.tgw.id
+  depends_on = [ aws_ec2_transit_gateway.tgw ]
+}
+
+# Configuration section for route table public subnet2
+resource "aws_route_table" "public_subnet" {
+  vpc_id = aws_vpc.vpc-2.id
+  tags = {
+    "Name" = "public-rt2"
+  }
+} 
+
+# Create route table public subnet association
+resource "aws_route_table_association" "public_subnet_association2" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_subnet.id
+}
+
+
+# Configuration section for default route to internet from public subnet
+resource "aws_route" "default_route_public_subnet2" {
+  route_table_id         = aws_route_table.public_subnet.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.internet_gateway2.id
+}
+
+# Create route to transist gateway in route table
+resource "aws_route" "tgw-route-2" {
+  route_table_id         = aws_route_table.public_subnet.id
+  destination_cidr_block = "10.1.0.0/16"
+  transit_gateway_id     = aws_ec2_transit_gateway.tgw.id
+  depends_on = [ aws_ec2_transit_gateway.tgw ]
+}
+
+/*
     Define AWS EC2
     I chose two httpd web servers that exposes a simple HTML file showing their EC2 IP address
 */
 resource "aws_instance" "private-webserver-1" {
   ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t3.micro"
-  security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
+  security_groups = [ "${aws_security_group.webserver-sg-ec2.id}" ]
   subnet_id = "${aws_subnet.private-1.id}"
   user_data = file("setup_apache.sh")
 }
@@ -103,7 +158,7 @@ resource "aws_instance" "private-webserver-1" {
 resource "aws_instance" "private-webserver-2" {
   ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t3.micro"
-  security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
+  security_groups = [ "${aws_security_group.webserver-sg-ec2.id}" ]
   subnet_id = "${aws_subnet.private-2.id}"
   user_data = file("setup_apache.sh")
 }
@@ -112,50 +167,28 @@ resource "aws_instance" "private-webserver-2" {
     Define Security Groups
     for private EC2 instances running webservers accessible only via ALB
 */
+resource "aws_security_group" "webserver-sg-ec2" {
+  name        = "webserver-sg-ec2"
+  description = "Allow HTTP traffic"
+  vpc_id      = aws_vpc.vpc-1.id
 
-// For private subnets (only ingress from VPC 2)
-resource "aws_security_group" "only-vpc-2" {
-    vpc_id = "${aws_vpc.vpc-1.id}"
-    name = "only-vpc-2"
-    description = "Security group that allows only ingress/egress traffic from/to VPC 2"
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    tags = {
-      name = "only-vpc-2"
-    }
-}
-
-// For Application Load Balancer in VPC 2
-resource "aws_security_group" "alb_sg" {
-  name   = "alb-sg"
-  vpc_id = aws_vpc.vpc-2.id
-}
-
-// Specific ingress/egress role for ALB in VPC 2
-resource "aws_security_group_rule" "ingress_alb_traffic" {
-  type              = "ingress"
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  security_group_id = aws_security_group.alb_sg.id
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "egress_ec2_traffic" {
-  type                     = "ingress"
-  from_port                = 8080
-  to_port                  = 8080
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.only-vpc-2.id
-  source_security_group_id = aws_security_group.alb_sg.id
-}
-
-resource "aws_security_group_rule" "ingress_ec2_health_check" {
-  type                     = "ingress"
-  from_port                = 8081
-  to_port                  = 8081
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.only-vpc-2.id
-  source_security_group_id = aws_security_group.alb_sg.id
+  egress {
+    from_port   = 8081
+    to_port     = 8081
+    protocol    = "tcp"
+    cidr_blocks = ["10.2.0.0/24"]
+  }
+ 
+  tags = {
+    Name = "webserver-sg-ec2" 
+  }
 }
 
 /*
@@ -185,7 +218,6 @@ resource "aws_nat_gateway" "nat-vpc-1" {
 /*
     Define Transit Gateway
     Tutorial: https://awstip.com/aws-transit-gateway-using-terraform-fb7731e94e58
-    Tutorial: https://medium.com/@nikunj.vasava/how-to-deploy-multiple-vpc-using-terraform-and-connect-with-transit-gateway-on-aws-7c76a245380
 */
 resource "aws_ec2_transit_gateway" "tgw" {
   description                     = "Transit Gateway with 2 VPCs"
@@ -250,6 +282,7 @@ resource "aws_lb_target_group" "alb_tg" {
 resource "aws_lb_target_group_attachment" "alb_tg_attach_webserver_1" {
   target_group_arn = aws_lb_target_group.alb_tg.arn
   target_id        = aws_instance.private-webserver-1.private_ip
+  availability_zone = "all"
   port             = 8080
 }
 
@@ -257,6 +290,7 @@ resource "aws_lb_target_group_attachment" "alb_tg_attach_webserver_1" {
 resource "aws_lb_target_group_attachment" "alb_tg_attach_webserver_2" {
   target_group_arn = aws_lb_target_group.alb_tg.arn
   target_id        = aws_instance.private-webserver-2.private_ip
+  availability_zone = "all"
   port             = 8080
 }
 
