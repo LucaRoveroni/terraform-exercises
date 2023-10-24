@@ -11,11 +11,231 @@ provider "aws" {
 }
 
 /*
+    Define VPC 1
+    Its subnets are spread onto 2 AZs eu-north-1a/b
+*/
+resource "aws_vpc" "vpc-1" {
+    cidr_block = "10.1.0.0/16"
+    instance_tenancy = "default"
+    enable_dns_hostnames = "true"
+    tags = {
+        name = "vpc-1"
+    }
+}
+
+/*
+    Define VPC 2
+    Its subnets are spread onto 2 AZs eu-north-1a/b
+*/
+resource "aws_vpc" "vpc-2" {
+    cidr_block = "10.2.0.0/16"
+    instance_tenancy = "default"
+    enable_dns_hostnames = "true"
+    tags = {
+        name = "vpc-2"
+    }
+}
+
+/*
+    Define Subnets for VPC 1
+*/
+// Private subnet in AZ1
+resource "aws_subnet" "private-1" {
+  vpc_id = "${aws_vpc.vpc-1}"
+  cidr_block = "10.0.0.0/17"
+  availability_zone = "${AWS_REGION}a"
+
+  tags = {
+    name = "private-1"
+  }
+}
+
+// Private subnet in AZ2
+resource "aws_subnet" "private-2" {
+  vpc_id = "${aws_vpc.vpc-1}"
+  cidr_block = "10.0.128.0/17"
+  availability_zone = "${AWS_REGION}b"
+
+  tags = {
+    name = "private-2"
+  }
+}
+
+/*
+    Define Subnets for VPC 2
+*/
+// Public subnet in AZ1
+resource "aws_subnet" "public-1" {
+  vpc_id = "${aws_vpc.vpc-2}"
+  cidr_block = "10.0.0.0/17"
+  map_public_ip_on_launch = "true"
+  availability_zone = "${AWS_REGION}a"
+
+  tags = {
+    name = "public-1"
+  }
+}
+
+// Public subnet in AZ2
+resource "aws_subnet" "public-2" {
+  vpc_id = "${aws_vpc.vpc-2}"
+  cidr_block = "10.0.128.0/17"
+  map_public_ip_on_launch = "true"
+  availability_zone = "${AWS_REGION}b"
+
+  tags = {
+    name = "public-2"
+  }
+}
+
+/*
+    Define AWS EC2
+    I chose two httpd web servers that exposes a simple HTML file showing their EC2 IP address
+*/
+resource "aws_instance" "private-webserver-1" {
+  ami = "${AWS_UBUNTU_AMI}"
+  instance_type = "t2.micro"
+  security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
+  subnet_id = "${aws_subnet.private-1.id}"
+  user_data = file("setup_apache.sh")
+}
+
+resource "aws_instance" "private-webserver-2" {
+  ami = "${AWS_UBUNTU_AMI}"
+  instance_type = "t2.micro"
+  security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
+  subnet_id = "${aws_subnet.private-2.id}"
+  user_data = file("setup_apache.sh")
+}
+
+/*
+    Define Security Groups
+    for private EC2 instances running webservers accessible only via ALB
+*/
+
+// For private subnets (only ingress from VPC 2)
+resource "aws_security_group" "only-vpc-2" {
+    vpc_id = "${aws_vpc.vpc-1.id}"
+    name = "only-vpc-2"
+    description = "Security group that allows only ingress/egress traffic from/to VPC 2"
+
+    tags = {
+      name = "only-vpc-2"
+    }
+}
+
+// For Application Load Balancer in VPC 2
+resource "aws_security_group" "alb_sg" {
+  name   = "alb-sg"
+  vpc_id = aws_vpc.vpc-2.id
+}
+
+// Specific ingress/egress role for ALB in VPC 2
+resource "aws_security_group_rule" "ingress_alb_traffic" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  security_group_id = aws_security_group.alb_sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "engress_ec2_traffic" {
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.only-vpc-2.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
+resource "aws_security_group_rule" "ingress_ec2_health_check" {
+  type                     = "ingress"
+  from_port                = 8081
+  to_port                  = 8081
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.only-vpc-2.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
+/*
+    Define ROUTE TABLES
+    Define generic permissions for public and private subnets
+*/
+// Route table for TGW VPC 2
+resource "aws_route_table" "public-to-tgw" {
+  vpc_id = aws_vpc.vpc-2.id
+
+  route = [
+    {
+        cidr_block = "10.2.0.0/16"
+        gateway_id = "${aws_internet_gateway.igw-vpc-2.id}"
+    },
+    {
+      cidr_block = "10.1.0.0/16"
+      gateway_id = "${aws_nat_gateway.nat-vpc-1.id}"
+    }
+  ]
+
+  tags = {
+    name = "public-to-tgw"
+  }
+}
+
+// Route table for TGW VPC 1
+resource "aws_route_table" "private-to-tgw" {
+  vpc_id = aws_vpc.vpc-1.id
+  tags = {
+    name = "private-to-tgw"
+  }
+}
+
+// Create route to transist gateway for VPC 1
+resource "aws_route" "tgw-route-vpc-1" {
+  route_table_id = aws_route_table.private-to-tgw.id
+  destination_cidr_block = "10.2.0.0/16"
+  transit_gateway_id = aws_ec2_transit_gateway.tgw.id
+  depends_on = [aws_ec2_transit_gateway.tgw]
+}
+
+// Create route to transist gateway for VPC 2
+resource "aws_route" "tgw-route-vpc-2" {
+  route_table_id = aws_route_table.public-to-tgw.id
+  destination_cidr_block = "10.1.0.0/16"
+  transit_gateway_id = aws_ec2_transit_gateway.tgw.id
+  depends_on = [aws_ec2_transit_gateway.tgw]
+}
+
+/*
+    Define ROUTE ASSOCIATIONS
+    Assign permissions to existing subnets
+*/
+resource "aws_route_table_association" "subnet-public-tgw-1" {
+  subnet_id = "${aws_subnet.public-1.id}"
+  route_table_id = "${aws_route_table.public-to-tgw.id}"
+}
+
+resource "aws_route_table_association" "subnet-public-tgw-2" {
+  subnet_id = "${aws_subnet.public-2.id}"
+  route_table_id = "${aws_route_table.public-to-tgw.id}"
+}
+
+resource "aws_route_table_association" "subnet-private-tgw-1" {
+  subnet_id = "${aws_subnet.private-1.id}"
+  route_table_id = "${aws_route_table.private-to-tgw.id}"
+}
+
+resource "aws_route_table_association" "subnet-private-tgw-2" {
+  subnet_id = "${aws_subnet.private-1.id}"
+  route_table_id = "${aws_route_table.private-to-tgw.id}"
+}
+
+/*
     Define Internet Gateways
 */
 // IGW for VPC 2
 resource "aws_internet_gateway" "igw-vpc-2" {
-    vpc_id = "${aws_vpc.vpc-2}"
+    vpc_id = "${aws_vpc.vpc-2.id}"
 
     tags = {
         name = "igw-vpc-2"
