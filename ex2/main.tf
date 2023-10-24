@@ -113,7 +113,7 @@ resource "aws_route_table_association" "private_subnet_association2" {
 # Create route to transist gateway in route table 
 resource "aws_route" "tgw-route-1" {
   route_table_id         = aws_route_table.private_subnet_rt.id
-  destination_cidr_block = "10.2.0.0/16"
+  destination_cidr_block = "0.0.0.0/0"
   transit_gateway_id     = aws_ec2_transit_gateway.tgw.id
   depends_on = [ aws_ec2_transit_gateway.tgw ]
 }
