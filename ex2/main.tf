@@ -267,6 +267,7 @@ resource "aws_lb_target_group" "alb_tg" {
   name       = "ALB-TargetGroup"
   port       = 80
   protocol   = "HTTP"
+  target_type = "ip"
   vpc_id     = aws_vpc.vpc-2.id
 
   load_balancing_algorithm_type = "round_robin"
@@ -308,7 +309,7 @@ resource "aws_lb" "alb" {
   name               = "alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [ aws_security_group.alb_sec-group.id ]
+  security_groups    = [ aws_security_group.alb-sec-group.id ]
 
   subnets = [
     aws_subnet.public-1.id,
