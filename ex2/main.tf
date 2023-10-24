@@ -94,7 +94,7 @@ resource "aws_subnet" "public-2" {
 */
 resource "aws_instance" "private-webserver-1" {
   ami = "${var.AWS_UBUNTU_AMI}"
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
   subnet_id = "${aws_subnet.private-1.id}"
   user_data = file("setup_apache.sh")
@@ -102,7 +102,7 @@ resource "aws_instance" "private-webserver-1" {
 
 resource "aws_instance" "private-webserver-2" {
   ami = "${var.AWS_UBUNTU_AMI}"
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
   subnet_id = "${aws_subnet.private-2.id}"
   user_data = file("setup_apache.sh")
@@ -165,11 +165,6 @@ resource "aws_security_group_rule" "ingress_ec2_health_check" {
 // Route table for TGW VPC 2
 resource "aws_route_table" "public-to-tgw" {
   vpc_id = aws_vpc.vpc-2.id
-
-  route {
-        cidr_block = "10.2.0.0/16"
-        gateway_id = "${aws_internet_gateway.igw-vpc-2.id}"
-  }
 
   route {
       cidr_block = "10.1.0.0/16"
