@@ -102,7 +102,12 @@ resource "aws_route_table" "private_subnet" {
 # Create route table public subnet association
 resource "aws_route_table_association" "private_subnet_association1" {
   subnet_id      = aws_subnet.private_subnet.id
-  route_table_id = aws_route_table.private_subnet.id
+  route_table_id = aws_route_table.private_1.id
+}
+
+resource "aws_route_table_association" "private_subnet_association1" {
+  subnet_id      = aws_subnet.private_subnet.id
+  route_table_id = aws_route_table.private_2.id
 }
 
 # Create route to transist gateway in route table 
@@ -124,7 +129,12 @@ resource "aws_route_table" "public_subnet" {
 # Create route table public subnet association
 resource "aws_route_table_association" "public_subnet_association2" {
   subnet_id      = aws_subnet.public_subnet.id
-  route_table_id = aws_route_table.public_subnet.id
+  route_table_id = aws_route_table.public_1.id
+}
+
+resource "aws_route_table_association" "public_subnet_association2" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_2.id
 }
 
 
