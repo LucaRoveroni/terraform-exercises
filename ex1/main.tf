@@ -237,7 +237,7 @@ resource "aws_security_group" "allow-everything" {
 // For private subnets (only ingress from bastion)
 resource "aws_security_group" "allow-bastion" {
     vpc_id = "${aws_vpc.vpc-es1.id}"
-    name = "allow-batsion"
+    name = "allow-bastion"
     description = "Security group that allows only ingress traffic from bastion"
 
     ingress {
