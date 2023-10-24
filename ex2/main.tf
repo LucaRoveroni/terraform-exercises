@@ -6,8 +6,7 @@
 
 // Define cloud provider
 provider "aws" {
-    access_key = var.AWS_ACCESS_KEY
-    secret_key = var.AWS_SECRET_KEY
+    profile = "TerraformAdmin"
     region = var.AWS_REGION
 }
 
