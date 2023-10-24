@@ -140,7 +140,7 @@ resource "aws_security_group_rule" "ingress_alb_traffic" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
-resource "aws_security_group_rule" "engress_ec2_traffic" {
+resource "aws_security_group_rule" "egress_ec2_traffic" {
   type                     = "ingress"
   from_port                = 8080
   to_port                  = 8080
@@ -295,8 +295,7 @@ resource "aws_lb_target_group" "alb_tg" {
   name       = "ALB-TargetGroup"
   port       = 80
   protocol   = "HTTP"
-  vpc_id     = aws_vpc.vpc-1.id
-  slow_start = 0
+  vpc_id     = aws_vpc.vpc-2.id
 
   load_balancing_algorithm_type = "round_robin"
 
@@ -317,11 +316,17 @@ resource "aws_lb_target_group" "alb_tg" {
   }
 }
 
+// Attach ALB with one EC2 of VPC 1
 resource "aws_lb_target_group_attachment" "alb_tg_attach" {
-  for_each = aws_instance.private-webserver-1
-
   target_group_arn = aws_lb_target_group.alb_tg.arn
   target_id        = aws_instance.private-webserver-1.id
+  port             = 8080
+}
+
+// Attach ALB with another EC2 of VPC 1
+resource "aws_lb_target_group_attachment" "alb_tg_attach" {
+  target_group_arn = aws_lb_target_group.alb_tg.arn
+  target_id        = aws_instance.private-webserver-2.id
   port             = 8080
 }
 
