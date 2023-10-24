@@ -42,7 +42,7 @@ resource "aws_vpc" "vpc-2" {
 // Private subnet in AZ1
 resource "aws_subnet" "private-1" {
   vpc_id = "${aws_vpc.vpc-1.id}"
-  cidr_block = "10.0.0.0/17"
+  cidr_block = "10.1.0.0/17"
   availability_zone = "${var.AWS_REGION}a"
 
   tags = {
@@ -53,7 +53,7 @@ resource "aws_subnet" "private-1" {
 // Private subnet in AZ2
 resource "aws_subnet" "private-2" {
   vpc_id = "${aws_vpc.vpc-1.id}"
-  cidr_block = "10.0.128.0/17"
+  cidr_block = "10.1.128.0/17"
   availability_zone = "${var.AWS_REGION}b"
 
   tags = {
@@ -67,7 +67,7 @@ resource "aws_subnet" "private-2" {
 // Public subnet in AZ1
 resource "aws_subnet" "public-1" {
   vpc_id = "${aws_vpc.vpc-2.id}"
-  cidr_block = "10.0.0.0/17"
+  cidr_block = "10.2.0.0/17"
   map_public_ip_on_launch = "true"
   availability_zone = "${var.AWS_REGION}a"
 
@@ -79,7 +79,7 @@ resource "aws_subnet" "public-1" {
 // Public subnet in AZ2
 resource "aws_subnet" "public-2" {
   vpc_id = "${aws_vpc.vpc-2.id}"
-  cidr_block = "10.0.128.0/17"
+  cidr_block = "10.2.128.0/17"
   map_public_ip_on_launch = "true"
   availability_zone = "${var.AWS_REGION}b"
 
@@ -317,14 +317,14 @@ resource "aws_lb_target_group" "alb_tg" {
 }
 
 // Attach ALB with one EC2 of VPC 1
-resource "aws_lb_target_group_attachment" "alb_tg_attach" {
+resource "aws_lb_target_group_attachment" "alb_tg_attach_webserver_1" {
   target_group_arn = aws_lb_target_group.alb_tg.arn
   target_id        = aws_instance.private-webserver-1.id
   port             = 8080
 }
 
 // Attach ALB with another EC2 of VPC 1
-resource "aws_lb_target_group_attachment" "alb_tg_attach" {
+resource "aws_lb_target_group_attachment" "alb_tg_attach_webserver_2" {
   target_group_arn = aws_lb_target_group.alb_tg.arn
   target_id        = aws_instance.private-webserver-2.id
   port             = 8080
