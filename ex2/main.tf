@@ -93,7 +93,7 @@ resource "aws_subnet" "public-2" {
     I chose two httpd web servers that exposes a simple HTML file showing their EC2 IP address
 */
 resource "aws_instance" "private-webserver-1" {
-  ami = "${AWS_UBUNTU_AMI}"
+  ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t2.micro"
   security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
   subnet_id = "${aws_subnet.private-1.id}"
@@ -101,7 +101,7 @@ resource "aws_instance" "private-webserver-1" {
 }
 
 resource "aws_instance" "private-webserver-2" {
-  ami = "${AWS_UBUNTU_AMI}"
+  ami = "${var.AWS_UBUNTU_AMI}"
   instance_type = "t2.micro"
   security_groups = [ "${aws_security_group.only-vpc-2.id}" ]
   subnet_id = "${aws_subnet.private-2.id}"
@@ -166,16 +166,15 @@ resource "aws_security_group_rule" "ingress_ec2_health_check" {
 resource "aws_route_table" "public-to-tgw" {
   vpc_id = aws_vpc.vpc-2.id
 
-  route = [
-    {
+  route {
         cidr_block = "10.2.0.0/16"
         gateway_id = "${aws_internet_gateway.igw-vpc-2.id}"
-    },
-    {
+  }
+
+  route {
       cidr_block = "10.1.0.0/16"
       gateway_id = "${aws_nat_gateway.nat-vpc-1.id}"
-    }
-  ]
+  }
 
   tags = {
     name = "public-to-tgw"
@@ -330,7 +329,7 @@ resource "aws_lb" "alb" {
   name               = "alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_tg.id]
+  security_groups    = [ aws_security_group.alb_sg.id ]
 
   subnets = [
     aws_subnet.public-1.id,
