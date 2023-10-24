@@ -92,7 +92,7 @@ resource "aws_subnet" "public-2" {
     Route Tables for VPCs
 */
 # Configuration section for route table public subnet
-resource "aws_route_table" "private_subnet" {
+resource "aws_route_table" "private_subnet_rt" {
   vpc_id = aws_vpc.vpc-1.id
   tags = {
     "Name" = "private-rt1"
@@ -101,13 +101,13 @@ resource "aws_route_table" "private_subnet" {
 
 # Create route table public subnet association
 resource "aws_route_table_association" "private_subnet_association1" {
-  subnet_id      = aws_subnet.private_subnet.id
-  route_table_id = aws_route_table.private_1.id
+  subnet_id      = aws_subnet.private_1.id
+  route_table_id = aws_route_table.private_subnet_rt.id
 }
 
 resource "aws_route_table_association" "private_subnet_association1" {
-  subnet_id      = aws_subnet.private_subnet.id
-  route_table_id = aws_route_table.private_2.id
+  subnet_id      = aws_subnet.private_2.id
+  route_table_id = aws_route_table.private_subnet_rt.id
 }
 
 # Create route to transist gateway in route table 
@@ -119,7 +119,7 @@ resource "aws_route" "tgw-route-1" {
 }
 
 # Configuration section for route table public subnet2
-resource "aws_route_table" "public_subnet" {
+resource "aws_route_table" "public_subnet_rt" {
   vpc_id = aws_vpc.vpc-2.id
   tags = {
     "Name" = "public-rt2"
@@ -128,13 +128,13 @@ resource "aws_route_table" "public_subnet" {
 
 # Create route table public subnet association
 resource "aws_route_table_association" "public_subnet_association2" {
-  subnet_id      = aws_subnet.public_subnet.id
-  route_table_id = aws_route_table.public_1.id
+  subnet_id      = aws_subnet.public_2.id
+  route_table_id = aws_route_table.public_subnet_rt.id
 }
 
 resource "aws_route_table_association" "public_subnet_association2" {
-  subnet_id      = aws_subnet.public_subnet.id
-  route_table_id = aws_route_table.public_2.id
+  subnet_id      = aws_subnet.public_1.id
+  route_table_id = aws_route_table.public_subnet_rt.id
 }
 
 
