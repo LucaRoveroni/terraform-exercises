@@ -101,18 +101,18 @@ resource "aws_route_table" "private_subnet_rt" {
 
 # Create route table public subnet association
 resource "aws_route_table_association" "private_subnet_association1" {
-  subnet_id      = aws_subnet.private_1.id
+  subnet_id      = aws_subnet.private-1.id
   route_table_id = aws_route_table.private_subnet_rt.id
 }
 
 resource "aws_route_table_association" "private_subnet_association2" {
-  subnet_id      = aws_subnet.private_2.id
+  subnet_id      = aws_subnet.private-2.id
   route_table_id = aws_route_table.private_subnet_rt.id
 }
 
 # Create route to transist gateway in route table 
 resource "aws_route" "tgw-route-1" {
-  route_table_id         = aws_route_table.private_subnet.id
+  route_table_id         = aws_route_table.private_subnet_rt.id
   destination_cidr_block = "10.2.0.0/16"
   transit_gateway_id     = aws_ec2_transit_gateway.tgw.id
   depends_on = [ aws_ec2_transit_gateway.tgw ]
@@ -128,26 +128,26 @@ resource "aws_route_table" "public_subnet_rt" {
 
 # Create route table public subnet association
 resource "aws_route_table_association" "public_subnet_association1" {
-  subnet_id      = aws_subnet.public_2.id
+  subnet_id      = aws_subnet.public-2.id
   route_table_id = aws_route_table.public_subnet_rt.id
 }
 
 resource "aws_route_table_association" "public_subnet_association2" {
-  subnet_id      = aws_subnet.public_1.id
+  subnet_id      = aws_subnet.public-1.id
   route_table_id = aws_route_table.public_subnet_rt.id
 }
 
 
 # Configuration section for default route to internet from public subnet
 resource "aws_route" "default_route_public_subnet2" {
-  route_table_id         = aws_route_table.public_subnet.id
+  route_table_id         = aws_route_table.public_subnet_rt.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.internet_gateway2.id
+  gateway_id             = aws_internet_gateway.igw-vpc-2.id
 }
 
 # Create route to transist gateway in route table
 resource "aws_route" "tgw-route-2" {
-  route_table_id         = aws_route_table.public_subnet.id
+  route_table_id         = aws_route_table.public_subnet_rt.id
   destination_cidr_block = "10.1.0.0/16"
   transit_gateway_id     = aws_ec2_transit_gateway.tgw.id
   depends_on = [ aws_ec2_transit_gateway.tgw ]
