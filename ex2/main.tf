@@ -153,6 +153,14 @@ resource "aws_route" "tgw-route-2" {
   depends_on = [ aws_ec2_transit_gateway.tgw ]
 }
 
+# Create route to nat gateway for private subnets
+resource "aws_route" "private_to_nat" {
+  route_table_id = aws_route_table.private_subnet_rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id = aws_nat_gateway.nat-1-vpc-2.id
+  depends_on = [ aws_nat_gateway.nat-vpc-1 ]
+}
+
 /*
     Define AWS EC2
     I chose two httpd web servers that exposes a simple HTML file showing their EC2 IP address
@@ -215,12 +223,12 @@ resource "aws_internet_gateway" "igw-vpc-2" {
 
 /*
     Define NAT Gateway
-    Specifically for private EC2 (download apache)
+    Specifically for private EC2 (download apache) located in VPC 
 */
 resource "aws_eip" "nat" {}
 
-resource "aws_nat_gateway" "nat-vpc-1" {
-  allocation_id = "${aws_eip.nat.id}"
+resource "aws_nat_gateway" "nat-1-vpc-2" {
+  allocation_id = "${aws_eip.nat-1.id}"
   subnet_id = "${aws_subnet.public-1.id}"
   depends_on = [ aws_internet_gateway.igw-vpc-2 ]
 }
