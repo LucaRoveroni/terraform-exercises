@@ -156,7 +156,7 @@ resource "aws_route" "tgw-route-2" {
 # Route for TGW
 resource "aws_ec2_transit_gateway_route" "example" {
   destination_cidr_block         = "0.0.0.0/0"
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.vpc-2.id
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.vpc2-attachment.id
   transit_gateway_route_table_id = aws_ec2_transit_gateway.tgw.association_default_route_table_id
 }
 
