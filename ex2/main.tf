@@ -158,7 +158,7 @@ resource "aws_route" "private_to_nat" {
   route_table_id = aws_route_table.private_subnet_rt.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id = aws_nat_gateway.nat-1-vpc-2.id
-  depends_on = [ aws_nat_gateway.nat-vpc-1 ]
+  depends_on = [ aws_nat_gateway.nat-1-vpc-2 ]
 }
 
 /*
