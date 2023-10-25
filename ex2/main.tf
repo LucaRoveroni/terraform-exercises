@@ -153,11 +153,11 @@ resource "aws_route" "tgw-route-2" {
   depends_on = [ aws_ec2_transit_gateway.tgw ]
 }
 
-# Create route to nat gateway for private subnets
-resource "aws_route" "private_to_nat" {
-  route_table_id = aws_route_table.public_subnet_rt.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id = aws_nat_gateway.nat-1-vpc-2.id
+# Route for TGW
+resource "aws_ec2_transit_gateway_route" "example" {
+  destination_cidr_block         = "0.0.0.0/0"
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.vpc-2.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway.tgw.association_default_route_table_id
 }
 
 /*
@@ -218,18 +218,6 @@ resource "aws_internet_gateway" "igw-vpc-2" {
     tags = {
         name = "igw-vpc-2"
     }
-}
-
-/*
-    Define NAT Gateway
-    Specifically for private EC2 (download apache) located in VPC 
-*/
-resource "aws_eip" "nat" {}
-
-resource "aws_nat_gateway" "nat-1-vpc-2" {
-  allocation_id = "${aws_eip.nat.id}"
-  subnet_id = "${aws_subnet.public-1.id}"
-  depends_on = [ aws_internet_gateway.igw-vpc-2 ]
 }
 
 /*
