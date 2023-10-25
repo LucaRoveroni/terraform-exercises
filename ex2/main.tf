@@ -204,8 +204,8 @@ resource "aws_security_group" "webserver-sg-ec2" {
   }
 
   egress {
-    from_port   = 8081
-    to_port     = 8081
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["10.2.0.0/24"]
   }
@@ -281,10 +281,10 @@ resource "aws_lb_target_group" "alb_tg" {
 
   health_check {
     enabled             = true
-    port                = 8081
+    port                = 8080
     interval            = 30
     protocol            = "HTTP"
-    path                = "/health"
+    path                = "/"
     matcher             = "200"
     healthy_threshold   = 3
     unhealthy_threshold = 3
