@@ -225,6 +225,7 @@ resource "aws_instance" "private-webserver-1" {
   instance_type = "t3.micro"
   security_groups = [ aws_security_group.webserver-sg-ec2.id ]
   subnet_id = aws_subnet.private-1.id
+  key_name = aws_key_pair.deployer-key.key_name
   user_data = file("setup_apache.sh")
 }
 
@@ -233,6 +234,7 @@ resource "aws_instance" "private-webserver-2" {
   instance_type = "t3.micro"
   security_groups = [ aws_security_group.webserver-sg-ec2.id ]
   subnet_id = aws_subnet.private-2.id
+  key_name = aws_key_pair.deployer-key.key_name
   user_data = file("setup_apache.sh")
 }
 
@@ -293,13 +295,6 @@ resource "aws_security_group" "webserver-sg-ec2" {
     protocol = "tcp"
     cidr_blocks = [ "10.2.0.0/16" ]
   }
-
-  egress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = [ "0.0.0.0/0" ]
-  }
  
   tags = {
     Name = "webserver-sg-ec2" 
@@ -317,13 +312,6 @@ resource "aws_security_group" "bastion-sg" {
     to_port = 22
     protocol = "tcp"
     cidr_blocks = [ "2.228.131.82/32" ]
-  }
-
-  egress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = [ "0.0.0.0/0" ]
   }
 
   tags = {
