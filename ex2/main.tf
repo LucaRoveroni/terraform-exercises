@@ -41,7 +41,7 @@ resource "aws_vpc" "vpc-2" {
 */
 // Private subnet in AZ1
 resource "aws_subnet" "private-1" {
-  vpc_id = "${aws_vpc.vpc-1.id}"
+  vpc_id = aws_vpc.vpc-1.id
   cidr_block = "10.1.0.0/17"
   availability_zone = "${var.AWS_REGION}a"
 
@@ -52,7 +52,7 @@ resource "aws_subnet" "private-1" {
 
 // Private subnet in AZ2
 resource "aws_subnet" "private-2" {
-  vpc_id = "${aws_vpc.vpc-1.id}"
+  vpc_id = aws_vpc.vpc-1.id
   cidr_block = "10.1.128.0/17"
   availability_zone = "${var.AWS_REGION}b"
 
@@ -66,8 +66,8 @@ resource "aws_subnet" "private-2" {
 */
 // Public subnet in AZ1
 resource "aws_subnet" "public-1" {
-  vpc_id = "${aws_vpc.vpc-2.id}"
-  cidr_block = "10.2.0.0/17"
+  vpc_id = aws_vpc.vpc-2.id
+  cidr_block = "10.2.0.0/18"
   map_public_ip_on_launch = "true"
   availability_zone = "${var.AWS_REGION}a"
 
@@ -78,13 +78,35 @@ resource "aws_subnet" "public-1" {
 
 // Public subnet in AZ2
 resource "aws_subnet" "public-2" {
-  vpc_id = "${aws_vpc.vpc-2.id}"
-  cidr_block = "10.2.128.0/17"
+  vpc_id = aws_vpc.vpc-2.id
+  cidr_block = "10.2.64.0/18"
   map_public_ip_on_launch = "true"
   availability_zone = "${var.AWS_REGION}b"
 
   tags = {
     name = "public-2"
+  }
+}
+
+// Private subnet in AZ1 (Added two private subnet for private EC2 in VPC 1)
+resource "aws_subnet" "private-1-vpc-2" {
+  vpc_id = aws_vpc.vpc-2.id
+  cidr_block = "10.2.128.0/18"
+  availability_zone = "${var.AWS_REGION}a"
+
+  tags = {
+    name = "private-1-vpc-2"
+  }
+}
+
+// Private subnet in AZ2 (Added two private subnet for private EC2 in VPC 1)
+resource "aws_subnet" "private-2-vpc-2" {
+  vpc_id = aws_vpc.vpc-2.id
+  cidr_block = "10.2.192.0/18"
+  availability_zone = "${var.AWS_REGION}b"
+
+  tags = {
+    name = "private-1-vpc-2"
   }
 }
 
@@ -124,7 +146,14 @@ resource "aws_route_table" "public_subnet_rt" {
   tags = {
     "Name" = "public-rt2"
   }
-} 
+}
+
+resource "aws_route_table" "private_subnet_rt_vpc_2" {
+  vpc_id = aws_vpc.vpc-2.id
+  tags = {
+    "Name" = "private-rt2"
+  }
+}
 
 # Create route table public subnet association
 resource "aws_route_table_association" "public_subnet_association1" {
@@ -136,7 +165,6 @@ resource "aws_route_table_association" "public_subnet_association2" {
   subnet_id      = aws_subnet.public-1.id
   route_table_id = aws_route_table.public_subnet_rt.id
 }
-
 
 # Configuration section for default route to internet from public subnet
 resource "aws_route" "default_route_public_subnet2" {
@@ -153,6 +181,23 @@ resource "aws_route" "tgw-route-2" {
   depends_on = [ aws_ec2_transit_gateway.tgw ]
 }
 
+# Create route for private subnets in VPC 2
+resource "aws_route" "tgw-private-vpc-2" {
+  route_table_id         = aws_route_table.private-1-vpc-2.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_nat_gateway.nat-gateway.id
+}
+
+resource "aws_route_table_association" "private-subnet-association-12" {
+  subnet_id      = aws_subnet.private-1-vpc-2.id
+  route_table_id = aws_route_table.private_subnet_rt_vpc_2.id
+}
+
+resource "aws_route_table_association" "private-subnet-association-22" {
+  subnet_id      = aws_subnet.private-2-vpc-2.id
+  route_table_id = aws_route_table.private_subnet_rt_vpc_2.id
+}
+
 # Route for TGW
 resource "aws_ec2_transit_gateway_route" "private_to_tgw" {
   destination_cidr_block         = "0.0.0.0/0"
@@ -166,8 +211,8 @@ resource "aws_ec2_transit_gateway_route" "private_to_tgw" {
 resource "aws_eip" "nat" {}
 
 resource "aws_nat_gateway" "nat-gateway" {
-  allocation_id = "${aws_eip.nat.id}"
-  subnet_id = "${aws_subnet.public-1.id}"
+  allocation_id = aws_eip.nat.id
+  subnet_id = aws_subnet.public-1.id
   depends_on = [ aws_internet_gateway.igw-vpc-2 ]
 }
 
@@ -176,26 +221,26 @@ resource "aws_nat_gateway" "nat-gateway" {
     I chose two httpd web servers that exposes a simple HTML file showing their EC2 IP address
 */
 resource "aws_instance" "private-webserver-1" {
-  ami = "${var.AWS_UBUNTU_AMI}"
+  ami = var.AWS_UBUNTU_AMI
   instance_type = "t3.micro"
-  security_groups = [ "${aws_security_group.webserver-sg-ec2.id}" ]
-  subnet_id = "${aws_subnet.private-1.id}"
+  security_groups = [ aws_security_group.webserver-sg-ec2.id ]
+  subnet_id = aws_subnet.private-1.id
   user_data = file("setup_apache.sh")
 }
 
 resource "aws_instance" "private-webserver-2" {
-  ami = "${var.AWS_UBUNTU_AMI}"
+  ami = var.AWS_UBUNTU_AMI
   instance_type = "t3.micro"
-  security_groups = [ "${aws_security_group.webserver-sg-ec2.id}" ]
-  subnet_id = "${aws_subnet.private-2.id}"
+  security_groups = [ aws_security_group.webserver-sg-ec2.id ]
+  subnet_id = aws_subnet.private-2.id
   user_data = file("setup_apache.sh")
 }
 
 resource "aws_instance" "bastion" {
-  ami = "${var.AWS_UBUNTU_AMI}"
+  ami = var.AWS_UBUNTU_AMI
   instance_type = "t3.micro"
   security_groups = [ aws_security_group.bastion-sg.id ]
-  subnet_id = "${aws_subnet.public-1.id}"
+  subnet_id = aws_subnet.public-1.id
   key_name = aws_key_pair.deployer-key.key_name
   depends_on = [ aws_key_pair.deployer-key ]
 }
@@ -291,7 +336,7 @@ resource "aws_security_group" "bastion-sg" {
 */
 // IGW for VPC 2
 resource "aws_internet_gateway" "igw-vpc-2" {
-    vpc_id = "${aws_vpc.vpc-2.id}"
+    vpc_id = aws_vpc.vpc-2.id
 
     tags = {
         name = "igw-vpc-2"
@@ -323,7 +368,7 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "vpc1-attachment" {
 
 // Attach VPC2 to TGW
 resource "aws_ec2_transit_gateway_vpc_attachment" "vpc2-attachment" {
-  subnet_ids         = [aws_subnet.public-1.id, aws_subnet.public-2.id]
+  subnet_ids         = [aws_subnet.private-1-vpc-2.id, aws_subnet.private-2-vpc-2.id]
   transit_gateway_id = aws_ec2_transit_gateway.tgw.id
   vpc_id             = aws_vpc.vpc-2.id
   tags = {
