@@ -180,6 +180,19 @@ resource "aws_instance" "private-webserver-2" {
   user_data = file("setup_apache.sh")
 }
 
+resource "aws_instance" "bastion" {
+  ami = "${var.AWS_UBUNTU_AMI}"
+  instance_type = "t3.micro"
+  security_groups = [ aws_security_group.bastion-sg.id ]
+  subnet_id = "${aws_subnet.public-1.id}"
+  key_name = "deployer"
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7tAtWMxenBCEtXcRRJ8XDf2jhzYd5VOxsZ8vFeNMawsXJCKNg5xuKIr/n0cmVb/5Brom+9X//CnO0IwR1G6uEDWEp8egCoH2WY584wB9siOcEwsDJwa++ohdxZ2XYwZeybOM6zq0RymD9vQq+FBeMj6GXlafx+WoSBlQnwggWQdv5+9J1DlHYYEdbr8zU4XEWNgVzUmE+JIaDfwjkfeRmAxnWleCHPgEeMSKAWlJrAUL39Km2VcMZLB5unwPSDkxZqz/YkcKQQz8+2O7vQ32p4mNosgkF6DNau1xdT/3hUbzuAFKj8UdMf8jEZRZ5KMwbl31sxVy75BsmNwFQcnY+l/yP7i4fgq1SaQ7xRX3yoaDcWi7QxXcn8QSKxEC0cxyugVeSMhwH3vRfuTIbpTFrI71Po8r7Op/Wmjn/KtPaU9Vyw2DhjuR95x2ICGCGnKHXtUMAOkJ4CIwy5qUPZSJFFcWlkQyyrnpWMs14E8YzGLJU145Yrzt2F+RJwuXkYS0= lucaroveroni@Lucas-MBP.homenet.telecomitalia.it"
+}
+
 /*
     Define Security Groups
     for private EC2 instances running webservers accessible only via ALB
@@ -212,6 +225,31 @@ resource "aws_security_group" "webserver-sg-ec2" {
  
   tags = {
     Name = "webserver-sg-ec2" 
+  }
+}
+
+// Define Security group for bastion EC2
+resource "aws_security_group" "bastion-sg" {
+  name = "bastion security group"
+  description = "Security Group for SSH with bastion"
+  vpc_id = aws_vpc.vpc-2.id
+
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [ "2.228.131.82/32" ]
+  }
+
+  egress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [ "0.0.0.0/0" ]
+  }
+
+  tags = {
+    Name = "bastion-sg"
   }
 }
 
