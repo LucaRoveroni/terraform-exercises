@@ -185,10 +185,10 @@ resource "aws_instance" "bastion" {
   instance_type = "t3.micro"
   security_groups = [ aws_security_group.bastion-sg.id ]
   subnet_id = "${aws_subnet.public-1.id}"
-  key_name = "deployer"
+  key_name = "deployer-key"
 }
 
-resource "aws_key_pair" "deployer" {
+resource "aws_key_pair" "deployer-key" {
   key_name   = "deployer-key"
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7tAtWMxenBCEtXcRRJ8XDf2jhzYd5VOxsZ8vFeNMawsXJCKNg5xuKIr/n0cmVb/5Brom+9X//CnO0IwR1G6uEDWEp8egCoH2WY584wB9siOcEwsDJwa++ohdxZ2XYwZeybOM6zq0RymD9vQq+FBeMj6GXlafx+WoSBlQnwggWQdv5+9J1DlHYYEdbr8zU4XEWNgVzUmE+JIaDfwjkfeRmAxnWleCHPgEeMSKAWlJrAUL39Km2VcMZLB5unwPSDkxZqz/YkcKQQz8+2O7vQ32p4mNosgkF6DNau1xdT/3hUbzuAFKj8UdMf8jEZRZ5KMwbl31sxVy75BsmNwFQcnY+l/yP7i4fgq1SaQ7xRX3yoaDcWi7QxXcn8QSKxEC0cxyugVeSMhwH3vRfuTIbpTFrI71Po8r7Op/Wmjn/KtPaU9Vyw2DhjuR95x2ICGCGnKHXtUMAOkJ4CIwy5qUPZSJFFcWlkQyyrnpWMs14E8YzGLJU145Yrzt2F+RJwuXkYS0= lucaroveroni@Lucas-MBP.homenet.telecomitalia.it"
 }
