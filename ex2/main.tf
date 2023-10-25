@@ -183,7 +183,7 @@ resource "aws_route" "tgw-route-2" {
 
 # Create route for private subnets in VPC 2
 resource "aws_route" "tgw-private-vpc-2" {
-  route_table_id         = aws_route_table.private-1-vpc-2.id
+  route_table_id         = aws_route_table.private_subnet_rt_vpc_2.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_nat_gateway.nat-gateway.id
 }
