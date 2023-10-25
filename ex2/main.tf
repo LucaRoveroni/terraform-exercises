@@ -196,7 +196,8 @@ resource "aws_instance" "bastion" {
   instance_type = "t3.micro"
   security_groups = [ aws_security_group.bastion-sg.id ]
   subnet_id = "${aws_subnet.public-1.id}"
-  key_name = "deployer-key"
+  key_name = aws_key_pair.deployer-key.key_name
+  depends_on = [ aws_key_pair.deployer-key ]
 }
 
 resource "aws_key_pair" "deployer-key" {
