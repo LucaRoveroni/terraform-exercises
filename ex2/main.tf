@@ -154,10 +154,21 @@ resource "aws_route" "tgw-route-2" {
 }
 
 # Route for TGW
-resource "aws_ec2_transit_gateway_route" "example" {
+resource "aws_ec2_transit_gateway_route" "private_to_tgw" {
   destination_cidr_block         = "0.0.0.0/0"
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.vpc2-attachment.id
   transit_gateway_route_table_id = aws_ec2_transit_gateway.tgw.association_default_route_table_id
+}
+
+/*
+    Define Nat Gateway
+*/
+resource "aws_eip" "nat" {}
+
+resource "aws_nat_gateway" "nat-gateway" {
+  allocation_id = "${aws_eip.nat.id}"
+  subnet_id = "${aws_subnet.public-1.id}"
+  depends_on = [ aws_internet_gateway.igw-vpc-2 ]
 }
 
 /*
